@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="grid.cfg"
+          class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="sslContextFactory">
+            <bean class="org.apache.ignite.ssl.SslContextFactory">
+                <property name="keyStoreFilePath" value="src/scripts/node.jks"/>
+                <property name="keyStorePassword" value="qwerty"/>
+                <property name="trustStoreFilePath" value="src/scripts/trust.jks"/>
+                <property name="trustStorePassword" value="qwerty"/>
+            </bean>
+        </property>
+
+        <property name="connectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
+                <property name="sslEnabled" value="true"/>
+                <property name="sslClientAuth" value="true"/>
+                <property name="jettyPath" value="src/main/resources/jetty.xml" />
+            </bean>
+        </property>
+
+        <property name="clientConnectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+                <property name="host" value="127.0.0.1"/>
+                <property name="port" value="10800"/>
+                <property name="portRange" value="10"/>
+                <property name="sslEnabled" value="true"/>
+                <property name="sslClientAuth" value="true"/>
+            </bean>
+        </property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean
+                        class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500..47510</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
+        <property name="communicationSpi">
+            <bean
+                class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+                <property name="localPort" value="48100"/>
+                <property name="localPortRange" value="10"/>
+            </bean>
+        </property>
+
+        <property name="cacheConfiguration">
+            <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                <property name="name" value="replicatedFullSyncTemplate*"/>
+                <property name="cacheMode" value="REPLICATED"/>
+                <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+            </bean>
+        </property>
+
+        <property name="pluginConfigurations">
+            <bean class="org.gridgain.grid.configuration.GridGainConfiguration">
+                <property name="authenticator">
+                    <bean class="org.gridgain.grid.security.passcode.PasscodeAuthenticator">
+                        <property name="aclProvider">
+                            <bean class="org.gridgain.grid.security.passcode.AuthenticationAclBasicProvider">
+                                <constructor-arg>
+                                    <map>
+                                        <!-- Allow all operations on server nodes. -->
+                                        <entry key-ref="server.cred" value="{defaultAllow:true}" />
+                                        <!-- Allow only cache reads on client nodes. -->
+                                        <entry key-ref="client.cred" value="{defaultAllow:false,{cache:'*',permissions:['CACHE_READ']}}" />
+                                    </map>
+                                </constructor-arg>
+                            </bean>
+                        </property>
+                    </bean>
+                </property>
+                <property name="securityCredentialsProvider">
+                    <bean class="org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider">
+                        <!-- Specify credentials for the current node -->
+                        <constructor-arg ref="server.cred" />
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+
+
+    <!-- Server node credentials. -->
+    <bean id="server.cred" class="org.apache.ignite.plugin.security.SecurityCredentials">
+        <constructor-arg value="server" />
+        <constructor-arg value="password" />
+    </bean>
+
+    <!-- Client node credentials. -->
+    <bean id="client.cred" class="org.apache.ignite.plugin.security.SecurityCredentials">
+        <constructor-arg value="client" />
+        <constructor-arg value="password" />
+    </bean>
+
+</beans>

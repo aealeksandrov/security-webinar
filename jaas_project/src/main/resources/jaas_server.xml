@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Copyright (C) GridGain Systems. All Rights Reserved.
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+-->
+
+<!--
+    POM file.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/util
+                           http://www.springframework.org/schema/util/spring-util.xsd">
+    <bean id="server_password" class="org.apache.ignite.plugin.security.SecurityCredentials">
+        <constructor-arg value="vagrant"/>
+        <!--<constructor-arg value=""/>-->
+        <constructor-arg value="vagrant"/>
+    </bean>
+
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500..47510</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
+        <property name="pluginConfigurations">
+            <bean class="org.gridgain.grid.configuration.GridGainConfiguration">
+                <property name="authenticator">
+                    <bean class="org.gridgain.grid.security.jaas.JaasAuthenticator">
+                        <!--<property name="callbackHandlerFactory">-->
+                            <!--<bean class="test.PasswordCallbackFactory"/>-->
+                        <!--</property>-->
+                        <property name="permissionsProvider">
+                            <bean class="org.gridgain.grid.security.jaas.JaasBasicPermissionsProvider">
+                                <constructor-arg>
+                                    <map>
+                                        <entry key="client">
+                                            <bean class="org.apache.ignite.plugin.security.SecurityBasicPermissionSet">
+                                                <property name="defaultAllowAll" value="false"/>
+                                                <property name="cachePermissions">
+                                                    <map>
+                                                        <entry key="*">
+                                                            <list>
+                                                                <value>CACHE_READ</value>
+                                                                <value>CACHE_PUT</value>
+                                                                <value>CACHE_REMOVE</value>
+                                                            </list>
+                                                        </entry>
+                                                    </map>
+                                                </property>
+                                            </bean>
+                                        </entry>
+
+                                        <entry key="superuser">
+                                            <bean class="org.apache.ignite.plugin.security.SecurityBasicPermissionSet">
+                                                <property name="defaultAllowAll" value="true"/>
+                                            </bean>
+                                        </entry>
+                                    </map>
+                                </constructor-arg>
+                            </bean>
+                        </property>
+                    </bean>
+                </property>
+
+                <property name="securityCredentialsProvider">
+                    <bean class="org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider">
+                        <constructor-arg ref="server_password" />
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>
